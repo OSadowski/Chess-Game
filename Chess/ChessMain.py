@@ -29,6 +29,10 @@ def main():
     clock = pygame.time.Clock()
     screen.fill(pygame.Color("white"))
     gameState = ChessEngine.GameState()
+
+    validMoves = gameState.getValidMoves()
+    moveMade = False
+
     loadImages()
     running = True
     sqSelected = ()  # the last square clicked by user
@@ -49,13 +53,19 @@ def main():
                     playerClicks.append(sqSelected)
                 if len(playerClicks) == 2:
                     move = ChessEngine.Move(playerClicks[0], playerClicks[1], gameState.board)
-                    gameState.makeMove(move)
                     print(move.getChessNotation())
+                    if move in validMoves:
+                        gameState.makeMove(move)
+                        moveMade = True
                     sqSelected = ()
                     playerClicks = []
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_z:
                     gameState.undoMove()
+                    moveMade = True
+        if moveMade:
+            validMoves = gameState.getValidMoves()
+            moveMade = False
 
         drawGameState(screen, gameState)
         clock.tick(Max_FPS)
