@@ -53,6 +53,10 @@ def main():
                     print(move.getChessNotation())
                     sqSelected = ()
                     playerClicks = []
+            elif e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_z:
+                    gameState.undoMove()
+
         drawGameState(screen, gameState)
         clock.tick(Max_FPS)
         pygame.display.flip()
