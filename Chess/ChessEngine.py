@@ -136,7 +136,15 @@ class GameState():
                     break
 
     def getKingMoves(self, row, col, moves):
-        pass
+        kingMoves = ((-1, -1), (-1, 1), (-1, 0), (0, 1), (0, -1), (1, 1), (1, 0), (1, -1))
+        enemyColour = "b" if self.whiteToMove else "w"
+        for i in range(8):
+            endRow = row + kingMoves[i][0]
+            endCol = col + kingMoves[i][1]
+            if 0 <= endRow < 8 and 0 <= endCol < 8:
+                endPiece = self.board[endRow][endCol]
+                if endPiece[0] == enemyColour or endPiece == "--":
+                    moves.append(Move((row, col), (endRow, endCol), self.board))
 
 
 class Move():
