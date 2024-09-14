@@ -1,8 +1,3 @@
-"""
-User Input
-Board Display
-"""
-
 import pygame
 from Chess import ChessEngine
 
@@ -57,8 +52,10 @@ def main():
                     if move in validMoves:
                         gameState.makeMove(move)
                         moveMade = True
-                    sqSelected = ()
-                    playerClicks = []
+                        sqSelected = ()
+                        playerClicks = []
+                    else:
+                        playerClicks = [sqSelected]
             elif e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_z:
                     gameState.undoMove()
