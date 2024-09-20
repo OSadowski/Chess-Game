@@ -1,8 +1,3 @@
-"""
-Data Storing / Move Log/Current Game State
-Determining Valid Moves
-"""
-
 
 class GameState():
     def __init__(self):
@@ -14,77 +9,109 @@ class GameState():
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["--", "--", "--", "--", "--", "--", "--", "--"],
             ["wp", "wp", "wp", "wp", "wp", "wp", "wp", "wp"],
-            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
-        ]
+            ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]]
         self.moveFunctions = {"p": self.getPawnMoves, "R": self.getRookMoves, "N": self.getKnightMoves,
                               "B": self.getBishopMoves, "Q": self.getQueenMoves, "K": self.getKingMoves}
-        self.whiteToMove = True
-        self.moveLog = []
-
-        self.whiteKingPosition = (7, 4)
-        self.blackKingPosition = (0, 4)
-        self.inCheck = False
+        self.white_to_move = True
+        self.move_log = []
+        self.white_king_location = (7, 4)
+        self.black_king_location = (0, 4)
+        self.check_mate = False
+        self.stale_mate = False
+        self.in_check = False
         self.pins = []
         self.checks = []
 
     def makeMove(self, move):
-        self.board[move.startRow][move.startCol] = "--"
-        self.board[move.endRow][move.endCol] = move.pieceMoved
-        self.moveLog.append(move)
-        self.whiteToMove = not self.whiteToMove
-        if move.pieceMoved == "wK":
-            self.whiteKingPosition = (move.endRow, move.endCol)
-        if move.pieceMoved == "bK":
-            self.blackKingPosition = (move.endRow, move.endCol)
+        self.board[move.start_row][move.start_col] = "--"
+        self.board[move.end_row][move.end_col] = move.piece_moved
+        self.move_log.append(move)  # log the move so we can undo it later
+        self.white_to_move = not self.white_to_move  # switch players
+        # update king's location if moved
+        if move.piece_moved == "wK":
+            self.white_king_location = (move.end_row, move.end_col)
+        elif move.piece_moved == "bK":
+            self.black_king_location = (move.end_row, move.end_col)
 
     def undoMove(self):
-        if len(self.moveLog) != 0:
-            move = self.moveLog.pop()
-            self.board[move.startRow][move.startCol] = move.pieceMoved
-            self.board[move.endRow][move.endCol] = move.pieceCaptured
-            self.whiteToMove = not self.whiteToMove
+        if len(self.move_log) != 0:  # make sure that there is a move to undo
+            move = self.move_log.pop()
+            self.board[move.start_row][move.start_col] = move.piece_moved
+            self.board[move.end_row][move.end_col] = move.piece_captured
+            self.white_to_move = not self.white_to_move  # swap players
+            # update the king's position if needed
+            if move.piece_moved == "wK":
+                self.white_king_location = (move.start_row, move.start_col)
+            elif move.piece_moved == "bK":
+                self.black_king_location = (move.start_row, move.start_col)
 
     def getValidMoves(self):
         moves = []
-        self.inCheck, self.pins, self.checks = self.checkForPinsAndChecks()
-        if self.whiteToMove:
-            kingRow = self.whiteKingPosition[0]
-            kingCol = self.whiteKingPosition[1]
+        self.in_check, self.pins, self.checks = self.checkForPinsAndChecks()
+
+        if self.white_to_move:
+            king_row = self.white_king_location[0]
+            king_col = self.white_king_location[1]
         else:
-            kingRow = self.blackKingPosition[0]
-            kingCol = self.blackKingPosition[1]
-        if self.inCheck:
+            king_row = self.black_king_location[0]
+            king_col = self.black_king_location[1]
+        if self.in_check:
             if len(self.checks) == 1:
                 moves = self.getAllPossibleMoves()
                 check = self.checks[0]
-                checkRow = check[0]
-                checkCol = check[1]
-                pieceChecking = self.board[checkRow][checkCol]
-                validSquares = []
-                if pieceChecking[1] == "N":
-                    validSquares = [(checkRow, checkCol)]
+                check_row = check[0]
+                check_col = check[1]
+                piece_checking = self.board[check_row][check_col]
+                valid_squares = []
+                if piece_checking[1] == "N":
+                    valid_squares = [(check_row, check_col)]
                 else:
                     for i in range(1, 8):
-                        validSquare = (kingRow + check[2] * i, kingCol + check[3] * i)
-                        validSquares.append(validSquare)
-                        if validSquare[0] == checkRow and validSquare[1] == checkCol:
+                        valid_square = (king_row + check[2] * i, king_col + check[3] * i)
+                        valid_squares.append(valid_square)
+                        if valid_square[0] == check_row and valid_square[1] == check_col:
                             break
                 for i in range(len(moves) - 1, -1, -1):
-                    if moves[i].pieceMoved[1] != "K":
-                        if not (moves[i].endRow, moves[i].endCol) in validSquares:
+                    if moves[i].piece_moved[1] != "K":
+                        if not (moves[i].end_row,
+                                moves[i].end_col) in valid_squares:
                             moves.remove(moves[i])
             else:
-                self.getKingMoves(kingRow, kingCol, moves)
+                self.getKingMoves(king_row, king_col, moves)
         else:
             moves = self.getAllPossibleMoves()
+
+        if len(moves) == 0:
+            if self.inCheck():
+                self.check_mate = True
+            else:
+                self.stale_mate = True
+        else:
+            self.check_mate = False
+            self.stale_mate = False
         return moves
+
+    def inCheck(self):
+        if self.white_to_move:
+            return self.squareUnderAttack(self.white_king_location[0], self.white_king_location[1])
+        else:
+            return self.squareUnderAttack(self.black_king_location[0], self.black_king_location[1])
+
+    def squareUnderAttack(self, row, col):
+        self.white_to_move = not self.white_to_move  # switch to oponent's point of wiev
+        opponents_moves = self.getAllPossibleMoves()
+        self.white_to_move = not self.white_to_move
+        for move in opponents_moves:
+            if move.end_row == row and move.end_col == col:  # square is under attack
+                return True
+        return False
 
     def getAllPossibleMoves(self):
         moves = []
         for row in range(len(self.board)):
             for col in range(len(self.board[row])):
                 turn = self.board[row][col][0]
-                if (turn == "w" and self.whiteToMove) or (turn == "b" and not self.whiteToMove):
+                if (turn == "w" and self.white_to_move) or (turn == "b" and not self.white_to_move):
                     piece = self.board[row][col][1]
                     self.moveFunctions[piece](row, col, moves)
         return moves
@@ -92,122 +119,133 @@ class GameState():
     def checkForPinsAndChecks(self):
         pins = []
         checks = []
-        inCheck = False
-        if self.whiteToMove:
-            enemyColour = "b"
-            allyColour = "w"
-            startRow = self.whiteKingPosition[0]
-            startCol = self.whiteKingPosition[1]
+        in_check = False
+        if self.white_to_move:
+            enemy_color = "b"
+            ally_color = "w"
+            start_row = self.white_king_location[0]
+            start_col = self.white_king_location[1]
         else:
-            enemyColour = "w"
-            allyColour = "b"
-            startRow = self.blackKingPosition[0]
-            startCol = self.blackKingPosition[1]
+            enemy_color = "w"
+            ally_color = "b"
+            start_row = self.black_king_location[0]
+            start_col = self.black_king_location[1]
         directions = ((-1, 0), (0, -1), (1, 0), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1))
         for j in range(len(directions)):
-            d = directions[j]
-            possiblePin = ()
+            direction = directions[j]
+            possible_pin = ()
             for i in range(1, 8):
-                endRow = startRow + d[0] * i
-                endCol = startCol + d[1] * i
-                if 0 <= endRow < 8 and 0 <= endCol < 8:
-                    endPiece = self.board[endRow][endCol]
-                    if endPiece[0] == allyColour and endPiece[1] != "K":
-                        if possiblePin == ():
-                            possiblePin = (endRow, endCol, d[0], d[1])
+                end_row = start_row + direction[0] * i
+                end_col = start_col + direction[1] * i
+                if 0 <= end_row <= 7 and 0 <= end_col <= 7:
+                    end_piece = self.board[end_row][end_col]
+                    if end_piece[0] == ally_color and end_piece[1] != "K":
+                        if possible_pin == ():
+                            possible_pin = (end_row, end_col, direction[0], direction[1])
                         else:
                             break
-                    elif endPiece[0] == enemyColour:
-                        type = endPiece[1]
-                        if (0 <= j <= 3 and type == "R") or \
-                                (4 <= j <= 7 and type == "B") or \
-                                (i == 1 and type == "p" and ((enemyColour == "w" and 6 <= j <= 7) or (enemyColour == "b" and 4 <= j <= 5))) or \
-                                (type == "Q") or (i == 1 and type == "K"):
-                            if possiblePin == ():
-                                inCheck = True
-                                checks.append((endRow, endCol, d[0], d[1]))
+                    elif end_piece[0] == enemy_color:
+                        enemy_type = end_piece[1]
+                        # 5 possibilities in this complex conditional
+                        # 1.) orthogonally away from king and piece is a rook
+                        # 2.) diagonally away from king and piece is a bishop
+                        # 3.) 1 square away diagonally from king and piece is a pawn
+                        # 4.) any direction and piece is a queen
+                        # 5.) any direction 1 square away and piece is a king
+                        if (0 <= j <= 3 and enemy_type == "R") or (4 <= j <= 7 and enemy_type == "B") or (
+                                i == 1 and enemy_type == "p" and (
+                                (enemy_color == "w" and 6 <= j <= 7) or (enemy_color == "b" and 4 <= j <= 5))) or (
+                                enemy_type == "Q") or (i == 1 and enemy_type == "K"):
+                            if possible_pin == ():
+                                in_check = True
+                                checks.append((end_row, end_col, direction[0], direction[1]))
                                 break
                             else:
-                                pins.append(possiblePin)
+                                pins.append(possible_pin)
                                 break
                         else:
                             break
                 else:
                     break
-        knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1))
-        for m in knightMoves:
-            endRow = startRow + m[0]
-            endCol = startCol + m[1]
-            if 0 <= endRow < 8 and 0 <= endCol < 8:
-                endPiece = self.board[endRow][endCol]
-                if endPiece[0] == enemyColour and endPiece[1] == "N":
-                    inCheck = True
-                    checks.append((endRow, endCol, m[0], m[1]))
-        return inCheck, pins, checks
+        knight_moves = ((-2, -1), (-2, 1), (-1, 2), (1, 2), (2, -1), (2, 1), (-1, -2), (1, -2))
+        for move in knight_moves:
+            end_row = start_row + move[0]
+            end_col = start_col + move[1]
+            if 0 <= end_row <= 7 and 0 <= end_col <= 7:
+                end_piece = self.board[end_row][end_col]
+                if end_piece[0] == enemy_color and end_piece[1] == "N":
+                    in_check = True
+                    checks.append((end_row, end_col, move[0], move[1]))
+        return in_check, pins, checks
 
     def getPawnMoves(self, row, col, moves):
-        piecePinned = False
-        pinDirection = ()
+        piece_pinned = False
+        pin_direction = ()
         for i in range(len(self.pins) - 1, -1, -1):
             if self.pins[i][0] == row and self.pins[i][1] == col:
-                piecePinned = True
-                pinDirection = (self.pins[i][2], self.pins[i][3])
+                piece_pinned = True
+                pin_direction = (self.pins[i][2], self.pins[i][3])
                 self.pins.remove(self.pins[i])
                 break
-        if self.whiteToMove:
+
+        if self.white_to_move:
             if self.board[row - 1][col] == "--":
-                if not piecePinned or pinDirection == (-1, 0):
+                if not piece_pinned or pin_direction == (-1, 0):
                     moves.append(Move((row, col), (row - 1, col), self.board))
                     if row == 6 and self.board[row - 2][col] == "--":
                         moves.append(Move((row, col), (row - 2, col), self.board))
+
             if col - 1 >= 0:
                 if self.board[row - 1][col - 1][0] == "b":
-                    if not piecePinned or pinDirection == (-1, -1):
+                    if not piece_pinned or pin_direction == (-1, -1):
                         moves.append(Move((row, col), (row - 1, col - 1), self.board))
+
             if col + 1 <= 7:
                 if self.board[row - 1][col + 1][0] == "b":
-                    if not piecePinned or pinDirection == (-1, 1):
+                    if not piece_pinned or pin_direction == (-1, 1):
                         moves.append(Move((row, col), (row - 1, col + 1), self.board))
-        else:
+
+        else:  # black pawn moves
             if self.board[row + 1][col] == "--":
-                if not piecePinned or pinDirection == (1, 0):
+                if not piece_pinned or pin_direction == (1, 0):
                     moves.append(Move((row, col), (row + 1, col), self.board))
                     if row == 1 and self.board[row + 2][col] == "--":
                         moves.append(Move((row, col), (row + 2, col), self.board))
+
             if col - 1 >= 0:
-                if self.board[row + 1][col - 1][0] == "b":
-                    if not piecePinned or pinDirection == (1, -1):
+                if self.board[row + 1][col - 1][0] == "w":
+                    if not piece_pinned or pin_direction == (1, -1):
                         moves.append(Move((row, col), (row + 1, col - 1), self.board))
+
             if col + 1 <= 7:
-                if self.board[row + 1][col + 1][0] == "b":
-                    if not piecePinned or pinDirection == (1, 1):
+                if self.board[row + 1][col + 1][0] == "w":
+                    if not piece_pinned or pin_direction == (1, 1):
                         moves.append(Move((row, col), (row + 1, col + 1), self.board))
 
-        # Pawn promotions to be added
-
     def getRookMoves(self, row, col, moves):
-        piecePinned = False
-        pinDirection = ()
+        piece_pinned = False
+        pin_direction = ()
         for i in range(len(self.pins) - 1, -1, -1):
             if self.pins[i][0] == row and self.pins[i][1] == col:
-                piecePinned = True
-                pinDirection = (self.pins[i][2], self.pins[i][3])
-                if self.board[row][col][i] != "Q":
+                piece_pinned = True
+                pin_direction = (self.pins[i][2], self.pins[i][3])
+                if self.board[row][col][1] != "Q":
                     self.pins.remove(self.pins[i])
                 break
+
         directions = ((-1, 0), (0, -1), (1, 0), (0, 1))
-        enemyColour = "b" if self.whiteToMove else "w"
-        for d in directions:
+        enemy_color = "b" if self.white_to_move else "w"
+        for direction in directions:
             for i in range(1, 8):
-                endRow = row + d[0] * i
-                endCol = col + d[1] * i
-                if 0 <= endRow < 8 and 0 <= endCol < 8:
-                    if not piecePinned or pinDirection == d or pinDirection == (-d[0], -d[1]):
-                        endPiece = self.board[endRow][endCol]
-                        if endPiece == "--":
-                            moves.append(Move((row, col), (endRow, endCol), self.board))
-                        elif endPiece[0] == enemyColour:
-                            moves.append(Move((row, col), (endRow, endCol), self.board))
+                end_row = row + direction[0] * i
+                end_col = col + direction[1] * i
+                if 0 <= end_row <= 7 and 0 <= end_col <= 7:
+                    if not piece_pinned or pin_direction == direction or pin_direction == (-direction[0], -direction[1]):
+                        end_piece = self.board[end_row][end_col]
+                        if end_piece == "--":
+                            moves.append(Move((row, col), (end_row, end_col), self.board))
+                        elif end_piece[0] == enemy_color:
+                            moves.append(Move((row, col), (end_row, end_col), self.board))
                             break
                         else:
                             break
@@ -215,47 +253,48 @@ class GameState():
                     break
 
     def getKnightMoves(self, row, col, moves):
-        piecePinned = False
-        pinDirection = ()
+        piece_pinned = False
         for i in range(len(self.pins) - 1, -1, -1):
             if self.pins[i][0] == row and self.pins[i][1] == col:
-                piecePinned = True
-                pinDirection = (self.pins[i][2], self.pins[i][3])
+                piece_pinned = True
                 self.pins.remove(self.pins[i])
                 break
-        knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1))
-        allyColour = "w" if self.whiteToMove else "b"
-        for m in knightMoves:
-            endRow = row + m[0]
-            endCol = col + m[1]
-            if 0 <= endRow < 8 and 0 <= endCol < 8:
-                if not piecePinned:
-                    endPiece = self.board[endRow][endCol]
-                    if endPiece[0] != allyColour:
-                        moves.append(Move((row, col), (endRow, endCol), self.board))
+
+        knight_moves = ((-2, -1), (-2, 1), (-1, 2), (1, 2), (2, -1), (2, 1), (-1, -2), (1, -2))
+        ally_color = "w" if self.white_to_move else "b"
+        for move in knight_moves:
+            end_row = row + move[0]
+            end_col = col + move[1]
+            if 0 <= end_row <= 7 and 0 <= end_col <= 7:
+                if not piece_pinned:
+                    end_piece = self.board[end_row][end_col]
+                    if end_piece[0] != ally_color:
+                        moves.append(Move((row, col), (end_row, end_col), self.board))
 
     def getBishopMoves(self, row, col, moves):
-        piecePinned = False
-        pinDirection = ()
+        piece_pinned = False
+        pin_direction = ()
         for i in range(len(self.pins) - 1, -1, -1):
             if self.pins[i][0] == row and self.pins[i][1] == col:
-                piecePinned = True
-                pinDirection = (self.pins[i][2], self.pins[i][3])
+                piece_pinned = True
+                pin_direction = (self.pins[i][2], self.pins[i][3])
                 self.pins.remove(self.pins[i])
                 break
-        directions = ((-1, -1), (-1, 1), (1, -1), (1, 1))
-        enemyColour = "b" if self.whiteToMove else "w"
-        for d in directions:
+
+        directions = ((-1, -1), (-1, 1), (1, 1), (1, -1))
+        enemy_color = "b" if self.white_to_move else "w"
+        for direction in directions:
             for i in range(1, 8):
-                endRow = row + d[0] * i
-                endCol = col + d[1] * i
-                if 0 <= endRow < 8 and 0 <= endCol < 8:
-                    if not piecePinned or pinDirection == d or pinDirection == (-d[0], -d[1]):
-                        endPiece = self.board[endRow][endCol]
-                        if endPiece == "--":
-                            moves.append(Move((row, col), (endRow, endCol), self.board))
-                        elif endPiece[0] == enemyColour:
-                            moves.append(Move((row, col), (endRow, endCol), self.board))
+                end_row = row + direction[0] * i
+                end_col = col + direction[1] * i
+                if 0 <= end_row <= 7 and 0 <= end_col <= 7:
+                    if not piece_pinned or pin_direction == direction or pin_direction == (
+                    -direction[0], -direction[1]):
+                        end_piece = self.board[end_row][end_col]
+                        if end_piece == "--":
+                            moves.append(Move((row, col), (end_row, end_col), self.board))
+                        elif end_piece[0] == enemy_color:
+                            moves.append(Move((row, col), (end_row, end_col), self.board))
                             break
                         else:
                             break
@@ -263,55 +302,57 @@ class GameState():
                     break
 
     def getQueenMoves(self, row, col, moves):
-        self.getRookMoves(row, col, moves)
         self.getBishopMoves(row, col, moves)
+        self.getRookMoves(row, col, moves)
 
     def getKingMoves(self, row, col, moves):
-        rowMoves = (-1, -1, -1, 0, 0, 1, 1, 1)
-        colMoves = (-1, 0, 1, -1, 1, -1, 0, 1)
-        allyColour = "w" if self.whiteToMove else "b"
+        row_moves = (-1, -1, -1, 0, 0, 0, 1, 1, 1)
+        col_moves = (-1, 0, 1, -1, 0, 1, -1, 0, 1)
+        ally_color = "w" if self.white_to_move else "b"
         for i in range(8):
-            endRow = row + rowMoves[i]
-            endCol = col + colMoves[i]
-            if 0 <= endRow < 8 and 0 <= endCol < 8:
-                endPiece = self.board[endRow][endCol]
-                if endPiece[0] != allyColour:
-                    if allyColour == "w":
-                        self.whiteKingPosition = (endRow, endCol)
+            end_row = row + row_moves[i]
+            end_col = col + col_moves[i]
+            if 0 <= end_row <= 7 and 0 <= end_col <= 7:
+                end_piece = self.board[end_row][end_col]
+                if end_piece[0] != ally_color:
+                    if ally_color == "w":
+                        self.white_king_location = (end_row, end_col)
                     else:
-                        self.blackKingPosition = (endRow, endCol)
-                    inCheck, pins, checks = self.checkForPinsAndChecks()
-                    if not inCheck:
-                        moves.append(Move((row, col), (endRow, endCol), self.board))
-                    if allyColour == "w":
-                        self.whiteKingPosition = (endRow, endCol)
+                        self.black_king_location = (end_row, end_col)
+                    in_check, pins, checks = self.checkForPinsAndChecks()
+                    if not in_check:
+                        moves.append(Move((row, col), (end_row, end_col), self.board))
+                    if ally_color == "w":
+                        self.white_king_location = (row, col)
                     else:
-                        self.blackKingPosition = (endRow, endCol)
+                        self.black_king_location = (row, col)
 
 
 class Move():
-    ranksToRows = {"1": 7, "2": 6, "3": 5, "4": 4,
-                   "5": 3, "6": 2, "7": 1, "8": 0}
-    rowsToRanks = {v: k for k, v in ranksToRows.items()}
-    filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3,
-                   "e": 4, "f": 5, "g": 6, "h": 7}
-    colsToFiles = {v: k for k, v in filesToCols.items()}
+    ranks_to_rows = {"1": 7, "2": 6, "3": 5, "4": 4,
+                     "5": 3, "6": 2, "7": 1, "8": 0}
+    rows_to_ranks = {v: k for k, v in ranks_to_rows.items()}
+    files_to_cols = {"a": 0, "b": 1, "c": 2, "d": 3,
+                     "e": 4, "f": 5, "g": 6, "h": 7}
+    cols_to_files = {v: k for k, v in files_to_cols.items()}
 
-    def __init__(self, startSq, endSq, board):
-        self.startRow = startSq[0]
-        self.startCol = startSq[1]
-        self.endRow = endSq[0]
-        self.endCol = endSq[1]
-        self.pieceMoved = board[self.startRow][self.startCol]
-        self.pieceCaptured = board[self.endRow][self.endCol]
-        self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
+    def __init__(self, start_square, end_square, board):
+        self.start_row = start_square[0]
+        self.start_col = start_square[1]
+        self.end_row = end_square[0]
+        self.end_col = end_square[1]
+        self.piece_moved = board[self.start_row][self.start_col]
+        self.piece_captured = board[self.end_row][self.end_col]
+        self.moveID = self.start_row * 1000 + self.start_col * 100 + self.end_row * 10 + self.end_col
 
     def __eq__(self, other):
         if isinstance(other, Move):
             return self.moveID == other.moveID
+        return False
 
     def getChessNotation(self):
-        return self.getRankFile(self.startRow, self.startCol) + self.getRankFile(self.endRow, self.endCol)
+        return self.piece_moved + " " + self.getRankFile(self.start_row, self.start_col) + "->" + self.getRankFile(
+            self.end_row, self.end_col) + " " + self.piece_captured
 
     def getRankFile(self, row, col):
-        return self.colsToFiles[col] + self.rowsToRanks[row]
+        return self.cols_to_files[col] + self.rows_to_ranks[row]
