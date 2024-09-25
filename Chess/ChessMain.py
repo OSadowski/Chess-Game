@@ -51,7 +51,7 @@ def main():
                     print(move.getChessNotation())
                     for i in range(len(validMoves)):
                         if move == validMoves[i]:
-                            gameState.makeMove(move)
+                            gameState.makeMove(validMoves[i])
                             moveMade = True
                             sqSelected = ()
                             playerClicks = []
