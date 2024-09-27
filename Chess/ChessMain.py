@@ -65,16 +65,32 @@ def main():
             validMoves = gameState.getValidMoves()
             moveMade = False
 
-        drawGameState(screen, gameState)
+        drawGameState(screen, gameState, validMoves, sqSelected)
         clock.tick(Max_FPS)
         pygame.display.flip()
+
+def highlightSquares(screen, gs, validMoves, sqSelected):
+    if sqSelected != ():
+        row, col = sqSelected
+        if gs.board[row][col][0] == ("w" if gs.white_to_move else "b"):
+            s = pygame.Surface((SquareSize, SquareSize))
+            s.set_alpha(100)
+            s.fill(pygame.Color("blue"))
+            screen.blit(s, (col*SquareSize, row*SquareSize))
+            s.fill(pygame.Color("yellow"))
+            for move in validMoves:
+                if move.start_row == row and move.start_col == col:
+                    screen.blit(s, (SquareSize*move.end_col, SquareSize*move.end_row))
+
 
 """
 Updates game board for current game state
 """
-def drawGameState(screen, gameState):
+def drawGameState(screen, gameState, validMoves, sqSelected):
     drawBoard(screen)
+    highlightSquares(screen, gameState, validMoves, sqSelected)
     drawPieces(screen, gameState.board)
+
 
 """
 Draws chess board
