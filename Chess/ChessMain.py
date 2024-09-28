@@ -63,6 +63,13 @@ def main():
                     gameState.undoMove()
                     moveMade = True
                     animate = False
+                if e.key == pygame.K_r:
+                    gameState = ChessEngine.GameState()
+                    validMoves = gameState.getValidMoves()
+                    sqSelected = ()
+                    playerClicks = []
+                    moveMade = False
+                    animate = False
         if moveMade:
             if animate:
                 animateMove(gameState.move_log[-1], screen, gameState.board, clock)
