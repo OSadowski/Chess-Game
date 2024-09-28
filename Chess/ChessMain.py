@@ -24,7 +24,7 @@ def main():
     clock = pygame.time.Clock()
     screen.fill(pygame.Color("white"))
     gameState = ChessEngine.GameState()
-
+    animate = False
     validMoves = gameState.getValidMoves()
     moveMade = False
 
@@ -53,6 +53,7 @@ def main():
                         if move == validMoves[i]:
                             gameState.makeMove(validMoves[i])
                             moveMade = True
+                            animate = True
                             sqSelected = ()
                             playerClicks = []
                     if not moveMade:
@@ -61,9 +62,13 @@ def main():
                 if e.key == pygame.K_z:
                     gameState.undoMove()
                     moveMade = True
+                    animate = False
         if moveMade:
+            if animate:
+                animateMove(gameState.move_log[-1], screen, gameState.board, clock)
             validMoves = gameState.getValidMoves()
             moveMade = False
+            animate = False
 
         drawGameState(screen, gameState, validMoves, sqSelected)
         clock.tick(Max_FPS)
@@ -96,6 +101,7 @@ def drawGameState(screen, gameState, validMoves, sqSelected):
 Draws chess board
 """
 def drawBoard(screen):
+    global colors
     colors = [pygame.Color("white"), pygame.Color("gray")]
     for row in range(Dimension):
         for column in range(Dimension):
@@ -112,9 +118,24 @@ def drawPieces(screen, board):
             if piece != "--":
                 screen.blit(Images[piece], pygame.Rect(column*SquareSize, row*SquareSize, SquareSize, SquareSize))
 
-
-
-
+def animateMove(move, screen, board, clock):
+    global colors
+    dR = move.end_row - move.start_row
+    dC = move.end_col - move.start_col
+    framesPerSquare = 10
+    frameCount = (abs(dR) + abs(dC)) * framesPerSquare
+    for frame in range(frameCount + 1):
+        row, col = (move.start_row + dR*frame/frameCount, move.start_col +dC*frame/frameCount)
+        drawBoard(screen)
+        drawPieces(screen, board)
+        color = colors[(move.end_row + move.end_col) % 2]
+        endSquare = pygame.Rect(move.end_col*SquareSize, move.end_row*SquareSize, SquareSize, SquareSize)
+        pygame.draw.rect(screen, color, endSquare)
+        if move.piece_captured != "--":
+            screen.blit(Images[move.piece_captured], endSquare)
+        screen.blit(Images[move.piece_moved], pygame.Rect(col*SquareSize, row*SquareSize, SquareSize, SquareSize))
+        pygame.display.flip()
+        clock.tick(60)
 
 
 
