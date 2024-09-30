@@ -76,7 +76,9 @@ def main():
                     animate = False
         #AI Move Logic
         if not gameOver and not isHumanTurn:
-            AIMove = ChessAI.findRandomMove(validMoves)
+            AIMove = ChessAI.findBestMove(gameState, validMoves)
+            if AIMove is None:
+                AIMove = ChessAI.findRandomMove(validMoves)
             gameState.makeMove(AIMove)
             moveMade = True
             animate = True
