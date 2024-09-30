@@ -1,5 +1,5 @@
 import pygame
-from Chess import ChessEngine
+from Chess import ChessEngine, ChessAI
 
 Width = Height = 512
 Dimension = 8
@@ -33,11 +33,14 @@ def main():
     sqSelected = ()  # the last square clicked by user
     playerClicks = []  # keeps track of user clicks
     gameOver = False
+    humanAsWhite = False
+    humanAsBlack = False
     while running:
+        isHumanTurn = (gameState.white_to_move and humanAsWhite) or (not gameState.white_to_move and humanAsBlack)
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
-            elif e.type == pygame.MOUSEBUTTONDOWN and not gameOver:
+            elif e.type == pygame.MOUSEBUTTONDOWN and not gameOver and isHumanTurn:
                 location = pygame.mouse.get_pos()
                 col = location[0]//SquareSize
                 row = location[1]//SquareSize
@@ -71,6 +74,13 @@ def main():
                     playerClicks = []
                     moveMade = False
                     animate = False
+        #AI Move Logic
+        if not gameOver and not isHumanTurn:
+            AIMove = ChessAI.findRandomMove(validMoves)
+            gameState.makeMove(AIMove)
+            moveMade = True
+            animate = True
+
         if moveMade:
             if animate:
                 animateMove(gameState.move_log[-1], screen, gameState.board, clock)
