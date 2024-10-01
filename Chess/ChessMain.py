@@ -67,6 +67,7 @@ def main():
                     gameState.undoMove()
                     moveMade = True
                     animate = False
+                    gameOver = False
                 if e.key == pygame.K_r:
                     gameState = ChessEngine.GameState()
                     validMoves = gameState.getValidMoves()
@@ -74,9 +75,10 @@ def main():
                     playerClicks = []
                     moveMade = False
                     animate = False
+                    gameOver = False
         #AI Move Logic
         if not gameOver and not isHumanTurn:
-            AIMove = ChessAI.findBestMove(gameState, validMoves)
+            AIMove = ChessAI.findBestMoveMinMax(gameState, validMoves)
             if AIMove is None:
                 AIMove = ChessAI.findRandomMove(validMoves)
             gameState.makeMove(AIMove)
