@@ -10,42 +10,37 @@ def findRandomMove(validMoves):
     return validMoves[random.randint(0, len(validMoves)-1)]
 
 
-def findBestMoveMinMax(gameState, validMoves):
-    global nextMove
-    findMoveMinMax(gameState, validMoves, Depth, gameState.white_to_move)
-
+def findBestMove(gameState, validMoves):
+    global nextMove, counter
+    nextMove = None
+    random.shuffle(validMoves)
+    counter = 0
+    findMoveNegaMax(gameState, validMoves, Depth, -checkMateScore, checkMateScore, 1 if gameState.white_to_move else -1)
+    print(counter)
     return nextMove
 
 
-def  findMoveMinMax(gameState, validMoves, depth, whiteToMove):
-    global nextMove
+def findMoveNegaMax(gameState, validMoves, depth, alpha, beta, turnMultiplier):
+    global nextMove, counter
+    counter += 1
     if depth == 0:
-        return scoreBoard(gameState)
+        return turnMultiplier * scoreBoard(gameState)
 
-    if whiteToMove:
-        maxScore = -checkMateScore
-        for move in validMoves:
-            gameState.makeMove(move)
-            nextMoves = gameState.getValidMoves()
-            score = findMoveMinMax(gameState, nextMoves, depth-1, False)
-            if score > maxScore:
-                maxScore = score
-                if depth == Depth:
-                    nextMove = move
-            gameState.undoMove()
-        return maxScore
-    else:
-        minScore = checkMateScore
-        for move in validMoves:
-            gameState.makeMove(move)
-            nextMoves = gameState.getValidMoves()
-            score = findMoveMinMax(gameState, nextMoves, depth-1, True)
-            if score < minScore:
-                minScore = score
-                if depth == Depth:
-                    nextMove = move
-            gameState.undoMove()
-        return minScore
+    maxScore = -checkMateScore
+    for move in validMoves:
+        gameState.makeMove(move)
+        nextMoves = gameState.getValidMoves()
+        score = -findMoveNegaMax(gameState, nextMoves, depth-1, -beta, -alpha, -turnMultiplier)
+        if score > maxScore:
+            maxScore = score
+            if depth == Depth:
+                nextMove = move
+        gameState.undoMove()
+        if maxScore > alpha:
+            alpha = maxScore
+        if alpha >= beta:
+            break
+    return maxScore
 
 
 def scoreBoard(gameState):
@@ -63,5 +58,5 @@ def scoreBoard(gameState):
             if square[0] == "w":
                 score += pieceScore[square[1]]
             elif square[0] == "b":
-                score += pieceScore[square[1]]
+                score -= pieceScore[square[1]]
     return score
