@@ -20,7 +20,7 @@ def findBestMoveMinMax(gameState, validMoves):
 def  findMoveMinMax(gameState, validMoves, depth, whiteToMove):
     global nextMove
     if depth == 0:
-        return scoreBoard(gameState.board)
+        return scoreBoard(gameState)
 
     if whiteToMove:
         maxScore = -checkMateScore
