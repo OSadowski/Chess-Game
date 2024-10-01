@@ -34,7 +34,7 @@ def main():
     playerClicks = []  # keeps track of user clicks
     gameOver = False
     humanAsWhite = False
-    humanAsBlack = False
+    humanAsBlack = True
     while running:
         isHumanTurn = (gameState.white_to_move and humanAsWhite) or (not gameState.white_to_move and humanAsBlack)
         for e in pygame.event.get():
@@ -78,7 +78,7 @@ def main():
                     gameOver = False
         #AI Move Logic
         if not gameOver and not isHumanTurn:
-            AIMove = ChessAI.findBestMoveMinMax(gameState, validMoves)
+            AIMove = ChessAI.findBestMove(gameState, validMoves)
             if AIMove is None:
                 AIMove = ChessAI.findRandomMove(validMoves)
             gameState.makeMove(AIMove)
