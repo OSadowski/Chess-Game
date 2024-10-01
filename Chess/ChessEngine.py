@@ -400,8 +400,8 @@ class GameState():
         self.getRookMoves(row, col, moves)
 
     def getKingMoves(self, row, col, moves):
-        row_moves = (-1, -1, -1, 0, 0, 0, 1, 1, 1)
-        col_moves = (-1, 0, 1, -1, 0, 1, -1, 0, 1)
+        row_moves = (-1, -1, -1, 0, 0, 1, 1, 1)
+        col_moves = (-1, 0, 1, -1, 1, -1, 0, 1)
         ally_colour = "w" if self.white_to_move else "b"
         for i in range(8):
             end_row = row + row_moves[i]
