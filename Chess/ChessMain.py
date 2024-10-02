@@ -2,6 +2,8 @@ import pygame
 from Chess import ChessEngine, ChessAI
 
 Width = Height = 512
+MoveLogPanel_Width = 350
+MoveLogPanel_Height = Height
 Dimension = 8
 SquareSize = Height // Dimension
 Max_FPS = 15
@@ -20,9 +22,10 @@ Handles user input and updates graphics
 """
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((Width, Height))
+    screen = pygame.display.set_mode((Width + MoveLogPanel_Width, Height))
     clock = pygame.time.Clock()
     screen.fill(pygame.Color("white"))
+    moveLogFont = pygame.font.SysFont("Arial", 12, False, False)
     gameState = ChessEngine.GameState()
     animate = False
     validMoves = gameState.getValidMoves()
@@ -33,8 +36,8 @@ def main():
     sqSelected = ()  # the last square clicked by user
     playerClicks = []  # keeps track of user clicks
     gameOver = False
-    humanAsWhite = False
-    humanAsBlack = True
+    humanAsWhite = True
+    humanAsBlack = False
     while running:
         isHumanTurn = (gameState.white_to_move and humanAsWhite) or (not gameState.white_to_move and humanAsBlack)
         for e in pygame.event.get():
@@ -44,7 +47,7 @@ def main():
                 location = pygame.mouse.get_pos()
                 col = location[0]//SquareSize
                 row = location[1]//SquareSize
-                if sqSelected == (row, col):  # if same square clicked twice
+                if sqSelected == (row, col) or col >= 8:  # if same square clicked twice
                     sqSelected = ()
                     playerClicks = []
                 else:
@@ -92,17 +95,15 @@ def main():
             moveMade = False
             animate = False
 
-        drawGameState(screen, gameState, validMoves, sqSelected)
+        drawGameState(screen, gameState, validMoves, sqSelected, moveLogFont)
 
-        if gameState.check_mate:
+        if gameState.check_mate or gameState.stale_mate:
             gameOver = True
-            if gameState.white_to_move:
-                drawText(screen, "Black wins by Checkmate")
+            if gameState.stale_mate:
+                text = "Stalemate"
             else:
-                drawText(screen, "White wins by Checkmate")
-        elif gameState.stale_mate:
-            gameOver = True
-            drawText(screen, "Stalemate")
+                text = "Black wins by Checkmate" if gameState.white_to_move else "White wins by Checkmate"
+            drawEndGameText(screen, text)
 
         clock.tick(Max_FPS)
         pygame.display.flip()
@@ -124,10 +125,11 @@ def highlightSquares(screen, gs, validMoves, sqSelected):
 """
 Updates game board for current game state
 """
-def drawGameState(screen, gameState, validMoves, sqSelected):
+def drawGameState(screen, gameState, validMoves, sqSelected, moveLogFont):
     drawBoard(screen)
     highlightSquares(screen, gameState, validMoves, sqSelected)
     drawPieces(screen, gameState.board)
+    drawMoveLog(screen, gameState, moveLogFont)
 
 
 """
@@ -151,6 +153,30 @@ def drawPieces(screen, board):
             if piece != "--":
                 screen.blit(Images[piece], pygame.Rect(column*SquareSize, row*SquareSize, SquareSize, SquareSize))
 
+
+def drawMoveLog(screen, gameState, font):
+    moveLogRect = pygame.Rect(Width, 0, MoveLogPanel_Width, MoveLogPanel_Height)
+    pygame.draw.rect(screen, pygame.Color("black"), moveLogRect)
+    moveLog = gameState.move_log
+    moveTexts = []
+    for i in range(0, len(moveLog), 2):
+        moveString = str(i//2 + 1) + ". " + moveLog[i].getChessNotation() + " // "
+        if i+1 < len(moveLog):
+            moveString += moveLog[i+1].getChessNotation()
+        moveTexts.append(moveString)
+    padding = 5
+    lineSpacing = 2
+    textY = padding
+    for i in range(len(moveTexts)):
+        text = moveTexts[i]
+        textObject = font.render(text, True, pygame.Color("white"))
+        if i % 2 == 0:
+            textLocation = moveLogRect.move(padding, textY)
+        else:
+            textLocation = moveLogRect.move(padding + MoveLogPanel_Width//2, textY)
+            textY += textObject.get_height() + lineSpacing
+        screen.blit(textObject, textLocation)
+
 def animateMove(move, screen, board, clock):
     global colors
     dR = move.end_row - move.start_row
@@ -170,7 +196,7 @@ def animateMove(move, screen, board, clock):
         pygame.display.flip()
         clock.tick(60)
 
-def drawText(screen, text):
+def drawEndGameText(screen, text):
     font = pygame.font.SysFont("Helvitca", 32, True, False)
     textObject = font.render(text, 0, pygame.Color("Red"))
     textLocation = pygame.Rect(0, 0, Width, Height).move(Width/2 - textObject.get_width()/2, Height/2 - textObject.get_height()/2)
