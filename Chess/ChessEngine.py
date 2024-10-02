@@ -471,8 +471,13 @@ class Move():
         return False
 
     def getChessNotation(self):
-        return self.piece_moved + " " + self.getRankFile(self.start_row, self.start_col) + "->" + self.getRankFile(
-            self.end_row, self.end_col) + " " + self.piece_captured
+        if self.isCastleMove and self.end_col == 6:
+            return "O-O"
+        elif self.isCastleMove and self.end_col == 2:
+            return "O-O-O"
+        else:
+            return self.piece_moved + " " + self.getRankFile(self.start_row, self.start_col) + "->" + self.getRankFile(
+                self.end_row, self.end_col) + " " + self.piece_captured
 
     def getRankFile(self, row, col):
         return self.cols_to_files[col] + self.rows_to_ranks[row]
