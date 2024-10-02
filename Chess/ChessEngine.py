@@ -275,6 +275,7 @@ class GameState():
                 break
 
         if self.white_to_move:
+            kingRow, kingCol = self.white_king_location
             if self.board[row - 1][col] == "--":
                 if not piece_pinned or pin_direction == (-1, 0):
                     moves.append(Move((row, col), (row - 1, col), self.board))
@@ -286,15 +287,54 @@ class GameState():
                     if not piece_pinned or pin_direction == (-1, -1):
                         moves.append(Move((row, col), (row - 1, col - 1), self.board))
                 elif (row - 1, col - 1) == self.enpassantPossible:
-                    moves.append(Move((row, col), (row - 1, col - 1), self.board, isEnPassantPossible=True))
+                    isAttackingPiece = isBlockingPiece = False
+                    if kingRow == row:
+                        if kingCol < col:
+                            insideRange = range(kingCol+1, col-1)
+                            outsideRange = range(col+1, 8)
+
+                        else:
+                            insideRange = range(kingCol-1, col, -1)
+                            outsideRange = range(col-2, -1, -1)
+                        for i in insideRange:
+                            if self.board[row][i] != "--":
+                                isBlockingPiece = True
+                        for i in outsideRange:
+                            square = self.board[row][i]
+                            if square[0] == "b" and (square[1] == "R" or square[1] == "Q"):
+                                isAttackingPiece = True
+                            elif square != "--":
+                                isBlockingPiece = True
+                    if not isAttackingPiece or isBlockingPiece:
+                        moves.append(Move((row, col), (row - 1, col - 1), self.board, isEnPassantPossible=True))
             if col + 1 <= 7:
                 if self.board[row - 1][col + 1][0] == "b":
                     if not piece_pinned or pin_direction == (-1, 1):
                         moves.append(Move((row, col), (row - 1, col + 1), self.board))
                 elif (row - 1, col + 1) == self.enpassantPossible:
-                    moves.append(Move((row, col), (row - 1, col + 1), self.board, isEnPassantPossible=True))
+                    isAttackingPiece = isBlockingPiece = False
+                    if kingRow == row:
+                        if kingCol < col:
+                            insideRange = range(kingCol + 1, col)
+                            outsideRange = range(col + 2, 8)
+
+                        else:
+                            insideRange = range(kingCol - 1, col + 1, -1)
+                            outsideRange = range(col - 1, -1, -1)
+                        for i in insideRange:
+                            if self.board[row][i] != "--":
+                                isBlockingPiece = True
+                        for i in outsideRange:
+                            square = self.board[row][i]
+                            if square[0] == "b" and (square[1] == "R" or square[1] == "Q"):
+                                isAttackingPiece = True
+                            elif square != "--":
+                                isBlockingPiece = True
+                    if not isAttackingPiece or isBlockingPiece:
+                        moves.append(Move((row, col), (row - 1, col - 1), self.board, isEnPassantPossible=True))
 
         else:  # black pawn moves
+            kingRow, kingCol = self.black_king_location
             if self.board[row + 1][col] == "--":
                 if not piece_pinned or pin_direction == (1, 0):
                     moves.append(Move((row, col), (row + 1, col), self.board))
@@ -306,15 +346,51 @@ class GameState():
                     if not piece_pinned or pin_direction == (1, -1):
                         moves.append(Move((row, col), (row + 1, col - 1), self.board))
                     elif (row + 1, col - 1) == self.enpassantPossible:
-                        moves.append(Move((row, col), (row + 1, col - 1), self.board, isEnPassantPossible=True))
+                        isAttackingPiece = isBlockingPiece = False
+                        if kingRow == row:
+                            if kingCol < col:
+                                insideRange = range(kingCol + 1, col - 1)
+                                outsideRange = range(col + 1, 8)
 
+                            else:
+                                insideRange = range(kingCol - 1, col, -1)
+                                outsideRange = range(col - 2, -1, -1)
+                            for i in insideRange:
+                                if self.board[row][i] != "--":
+                                    isBlockingPiece = True
+                            for i in outsideRange:
+                                square = self.board[row][i]
+                                if square[0] == "w" and (square[1] == "R" or square[1] == "Q"):
+                                    isAttackingPiece = True
+                                elif square != "--":
+                                    isBlockingPiece = True
+                        if not isAttackingPiece or isBlockingPiece:
+                            moves.append(Move((row, col), (row - 1, col - 1), self.board, isEnPassantPossible=True))
             if col + 1 <= 7:
                 if self.board[row + 1][col + 1][0] == "w":
                     if not piece_pinned or pin_direction == (1, 1):
                         moves.append(Move((row, col), (row + 1, col + 1), self.board))
                     elif (row + 1, col + 1) == self.enpassantPossible:
-                        moves.append(Move((row, col), (row + 1, col + 1), self.board, isEnPassantPossible=True))
+                        isAttackingPiece = isBlockingPiece = False
+                        if kingRow == row:
+                            if kingCol < col:
+                                insideRange = range(kingCol + 1, col)
+                                outsideRange = range(col + 2, 8)
 
+                            else:
+                                insideRange = range(kingCol - 1, col + 1, -1)
+                                outsideRange = range(col - 1, -1, -1)
+                            for i in insideRange:
+                                if self.board[row][i] != "--":
+                                    isBlockingPiece = True
+                            for i in outsideRange:
+                                square = self.board[row][i]
+                                if square[0] == "w" and (square[1] == "R" or square[1] == "Q"):
+                                    isAttackingPiece = True
+                                elif square != "--":
+                                    isBlockingPiece = True
+                        if not isAttackingPiece or isBlockingPiece:
+                            moves.append(Move((row, col), (row - 1, col - 1), self.board, isEnPassantPossible=True))
     def getRookMoves(self, row, col, moves):
         piece_pinned = False
         pin_direction = ()
